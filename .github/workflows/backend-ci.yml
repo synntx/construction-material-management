@@ -9,20 +9,19 @@ on:
 jobs:
   basic-check:
     runs-on: ubuntu-latest
-
     steps:
-      - uses: actions/checkout@v3
-      - name: Set up Node.js v22.11.0
-        uses: actions/setup-node@v3
+      - uses: actions/checkout@v4
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
         with:
-          node-version: "v22.11.0"
+          version: 10
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
           cache: "pnpm"
           cache-dependency-path: backend/pnpm-lock.yaml
-
-      - name: Install pnpm
-        run: npm install -g pnpm
-
-      - name: Install backend dependencies with pnpm
+      - name: Install dependencies
         run: pnpm install --frozen-lockfile
         working-directory: backend
       - name: Basic check - Workflow completed
