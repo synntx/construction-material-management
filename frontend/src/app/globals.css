@@ -1,0 +1,99 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: var(--font-outfit), Arial, Helvetica, sans-serif;
+}
+
+@layer base {
+  :root {
+    --primary-hue: 210; /* Hue from #3b82f6 */
+    --primary-saturation: 77%; /* Saturation from #3b82f6 */
+    --primary-lightness: 59%; /* Lightness from #3b82f6 */
+
+    --background: 0 0% 100%; /* White */
+    --foreground: 240 10% 3.9%; /* Dark gray - adjust if needed */
+    --card: 0 0% 100%; /* White */
+    --card-foreground: 240 10% 3.9%; /* Dark gray - adjust if needed */
+    --popover: 0 0% 100%; /* White */
+    --popover-foreground: 240 10% 3.9%; /* Dark gray - adjust if needed */
+
+    --primary: var(--primary-hue) var(--primary-saturation)
+      var(--primary-lightness); /* Main Primary Color */
+    --primary-foreground: 0 0% 98%; /* White text on Primary */
+
+    --secondary: var(--primary-hue) calc(var(--primary-saturation) * 0.2) 96%; /* Lighter tint of primary */
+    --secondary-foreground: var(--primary-hue)
+      calc(var(--primary-saturation) * 0.8) 20%; /* Darker shade of primary */
+
+    --muted: var(--primary-hue) calc(var(--primary-saturation) * 0.1) 92%; /* Even lighter tint */
+    --muted-foreground: var(--primary-hue) calc(var(--primary-saturation) * 0.4)
+      50%; /* Medium shade */
+
+    --accent: var(--primary-hue) calc(var(--primary-saturation) * 0.2) 94%; /* Similar to secondary, slightly different lightness */
+    --accent-foreground: var(--primary-hue)
+      calc(var(--primary-saturation) * 0.8) 20%; /* Same as secondary-foreground */
+
+    --destructive: 0 84.2% 60.2%; /* Red - keep as is or adjust hue slightly */
+    --destructive-foreground: 0 0% 98%; /* White text on destructive */
+
+    --border: var(--primary-hue) calc(var(--primary-saturation) * 0.15) 88%; /* Light border */
+    --input: var(--primary-hue) calc(var(--primary-saturation) * 0.15) 88%; /* Light input background */
+    --ring: var(--primary-hue) var(--primary-saturation)
+      calc(var(--primary-lightness) + 10%); /* Slightly lighter primary for ring */
+
+    --chart-1: 12 76% 61%; /* Keep or adjust to complement primary */
+    --chart-2: 173 58% 39%; /* Keep or adjust to complement primary */
+    --chart-3: 43 74% 66%; /* Keep or adjust to complement primary */
+    --chart-4: 27 87% 67%; /* Keep or adjust to complement primary */
+    --chart-5: 197 37% 24%; /* Keep or adjust to complement primary */
+
+    --radius: 0.5rem;
+  }
+  .dark {
+    --background: 240 10% 3.9%; /* Dark background */
+    --foreground: 0 0% 98%; /* White text on dark background */
+    --card: 240 10% 3.9%; /* Dark card */
+    --card-foreground: 0 0% 98%; /* White text on dark card */
+    --popover: 240 10% 3.9%; /* Dark popover */
+    --popover-foreground: 0 0% 98%; /* White text on dark popover */
+
+    --primary: var(--primary-hue) var(--primary-saturation)
+      var(--primary-lightness); /* Main Primary Color - same for dark mode */
+    --primary-foreground: 0 0% 98%; /* White text on Primary */
+
+    --secondary: var(--primary-hue) calc(var(--primary-saturation) * 0.2) 18%; /* Darker shade of primary */
+    --secondary-foreground: 0 0% 98%; /* White text on secondary dark */
+
+    --muted: var(--primary-hue) calc(var(--primary-saturation) * 0.1) 14%; /* Even darker shade */
+    --muted-foreground: var(--primary-hue) calc(var(--primary-saturation) * 0.4)
+      60%; /* Lighter shade for muted text */
+
+    --accent: var(--primary-hue) calc(var(--primary-saturation) * 0.2) 20%; /* Similar to secondary, slightly different lightness */
+    --accent-foreground: 0 0% 98%; /* White text on accent dark */
+
+    --destructive: 0 62.8% 30.6%; /* Darker red for dark mode */
+    --destructive-foreground: 0 0% 98%; /* White text on destructive dark */
+
+    --border: var(--primary-hue) calc(var(--primary-saturation) * 0.15) 24%; /* Darker border */
+    --input: var(--primary-hue) calc(var(--primary-saturation) * 0.15) 24%; /* Darker input background */
+    --ring: var(--primary-hue) var(--primary-saturation)
+      calc(var(--primary-lightness) - 10%); /* Slightly darker primary for ring */
+
+    --chart-1: 220 70% 50%; /* Keep or adjust to complement primary */
+    --chart-2: 160 60% 45%; /* Keep or adjust to complement primary */
+    --chart-3: 30 80% 55%; /* Keep or adjust to complement primary */
+    --chart-4: 280 65% 60%; /* Keep or adjust to complement primary */
+    --chart-5: 340 75% 55%; /* Keep or adjust to complement primary */
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
