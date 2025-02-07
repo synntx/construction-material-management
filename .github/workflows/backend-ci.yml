@@ -18,6 +18,10 @@ jobs:
           node-version: "v22.11.0"
           cache: "pnpm"
           cache-dependency-path: backend/pnpm-lock.yaml
+
+      - name: Install pnpm
+        run: npm install -g pnpm
+
       - name: Install backend dependencies with pnpm
         run: pnpm install --frozen-lockfile
         working-directory: backend
