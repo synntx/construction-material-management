@@ -1,4 +1,4 @@
-import { BasicItem, Prisma } from "@prisma/client";
+import { BasicItem, Prisma, SubType } from "@prisma/client";
 import prisma from "../prismaClient";
 import { generateChildCode, generateParentCode } from "../utils/code";
 import { CreateItemInput } from "../validations/item.validation";
@@ -49,49 +49,86 @@ export const createItem = async (data: CreateItemInput): Promise<BasicItem> => {
 };
 
 export interface GetItemsQueryParams {
-  page?: string | number;
-  limit?: string | number;
+  page?: string;
+  limit?: string;
   sortBy?: string;
   order?: "asc" | "desc";
+  q?: string;
+  subType?: string;
+  minLeadTime?: string;
+  maxLeadTime?: string;
+  minRate?: string;
+  maxRate?: string;
 }
 
 export const getItems = async (
   projectId: string,
-  queryParams: GetItemsQueryParams = {}
+  qp: GetItemsQueryParams = {} // qp = queryParam
 ): Promise<{ items: BasicItem[]; totalPages: number }> => {
-  const page = Number(queryParams.page) || 1;
-  const limit = Number(queryParams.limit) || 10;
+  const page = qp.page ? parseInt(qp.page) : 1;
+  const limit = qp.limit ? parseInt(qp.limit) : 10;
   const skip = (page - 1) * limit;
 
-  const sortField = queryParams.sortBy || "name";
-  const sortOrder: "asc" | "desc" =
-    queryParams.order === "desc" ? "desc" : "asc";
+  const sortField = qp.sortBy || "code";
+  const sortOrder: "asc" | "desc" = qp.order === "desc" ? "desc" : "asc";
 
-  const items = await prisma.basicItem.findMany({
-    where: {
-      projectId: projectId,
-      parentItemId: null,
-    },
-    take: limit,
-    skip: skip,
-    orderBy: {
-      [sortField]: sortOrder,
-    },
-    include: {
-      childItems: true,
-    },
-  });
+  const avgMinLeadTime = qp.minLeadTime ? parseInt(qp.minLeadTime) : undefined;
+  const avgMaxLeadTime = qp.maxLeadTime ? parseInt(qp.maxLeadTime) : undefined;
 
-  const totalItems = await prisma.basicItem.count({
-    where: {
-      projectId: projectId,
-      parentItemId: null,
-    },
-  });
+  const minRate = qp.minRate ? parseFloat(qp.minRate) : undefined;
+  const maxRate = qp.maxRate ? parseFloat(qp.maxRate) : undefined;
+
+  const where: Prisma.BasicItemWhereInput = {
+    projectId,
+    parentItemId: null,
+  };
+
+  // parse subtypes ?subType=civil,ohe
+  if (qp.subType) {
+    where.subType = { in: qp.subType.split(",") as SubType[] };
+  }
+
+  if (avgMaxLeadTime !== undefined) {
+    where.avgLeadTime = { ...where, lte: avgMinLeadTime };
+  }
+  if (avgMinLeadTime !== undefined) {
+    where.avgLeadTime = { ...where, gte: avgMinLeadTime };
+  }
+
+  if (minRate !== undefined) {
+    where.rate = { ...where, lte: minRate };
+  }
+  if (maxRate !== undefined) {
+    where.rate = { ...where, gte: maxRate };
+  }
+
+  if (qp.q) {
+    where.OR = [
+      { name: { contains: qp.q, mode: Prisma.QueryMode.insensitive } },
+      { code: { contains: qp.q, mode: Prisma.QueryMode.insensitive } },
+    ];
+  }
+
+  const [items, totalItems] = await Promise.all([
+    prisma.basicItem.findMany({
+      where,
+      take: limit,
+      skip: skip,
+      orderBy: {
+        [sortField]: sortOrder ?? Prisma.SortOrder.asc,
+      },
+    }),
+    prisma.basicItem.aggregate({
+      where,
+      _count: {
+        _all: true,
+      },
+    }),
+  ]);
 
   appAssert(items, NOT_FOUND, `items not found`);
 
-  return { items, totalPages: Math.ceil(totalItems / limit) };
+  return { items, totalPages: Math.ceil(totalItems._count._all / limit) };
 };
 
 export interface SearchItemsQueryParams extends GetItemsQueryParams {

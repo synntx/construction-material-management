@@ -16,7 +16,7 @@ import {
 import { CreateItemInput } from "../validations/item.validation";
 import { CREATED, NO_CONTENT, NOT_FOUND, OK } from "../constants/http";
 import appAssert from "../utils/assert";
-import logger from "../utils/logger"; 
+import logger from "../utils/logger";
 
 export const createItemHandler = catchErrors(
   async (
@@ -43,7 +43,18 @@ export const getItemsHandler = catchErrors(
   ) => {
     logger.info("Handling getItems request");
     const projectId = req.params.projectId as string;
-    const { page, limit, sortBy, order } = req.query as GetItemsQueryParams;
+    const {
+      page,
+      limit,
+      sortBy,
+      order,
+      q,
+      subType,
+      minLeadTime,
+      maxLeadTime,
+      minRate,
+      maxRate,
+    } = req.query as GetItemsQueryParams;
     logger.debug(
       `Get items for projectId: ${projectId}, query params:`,
       req.query
@@ -54,6 +65,12 @@ export const getItemsHandler = catchErrors(
       limit,
       sortBy,
       order,
+      q,
+      subType,
+      minLeadTime,
+      maxLeadTime,
+      minRate,
+      maxRate,
     });
     logger.debug(`Retrieved ${items.length} items, totalPages: ${totalPages}`);
 
@@ -115,7 +132,7 @@ export const getItemHandler = catchErrors(
     const item = await getItem(itemId);
 
     appAssert(item, NOT_FOUND, `Item not found with itemId: ${itemId}`);
-    logger.debug(`Item found and retrieved: ${itemId}`); 
+    logger.debug(`Item found and retrieved: ${itemId}`);
 
     return res.status(OK).json({ ...item, rate: item.rate?.toFixed(4) });
   }

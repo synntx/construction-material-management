@@ -29,6 +29,12 @@ export const createItemSchema = z.object({
   }),
 });
 
+//q
+// subType?: string;
+// minLeadTime?: string;
+// maxLeadTime?: string;
+// minRate?: string;
+// maxRate?: string;
 export const getItemsSchema = z.object({
   body: z.object({}),
   params: z.object({
@@ -43,6 +49,12 @@ export const getItemsSchema = z.object({
       .optional(),
     sortBy: z.string().optional(),
     order: z.enum(["asc", "desc"]).optional(),
+    q: z.string().optional(),
+    subType: z.nativeEnum(SubType).optional(),
+    minLeadTime: z.string().optional(),
+    maxLeadTime: z.string().optional(),
+    minRate: z.string().optional(),
+    maxRate: z.string().optional(),
   }),
 });
 
