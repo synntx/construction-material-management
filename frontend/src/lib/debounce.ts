@@ -17,7 +17,7 @@ export function debounce<
   (...args: any[]) => any
 >(func: T, wait: number) {
   // Stores the timeout ID returned by setTimeout, allowing cancellation with clearTimeout.
-  const timeout: NodeJS.Timeout | null = null;
+  let timeout: NodeJS.Timeout | null = null;
 
   // The debounced function that is returned.
   // Uses rest parameters (...args) to accept any arguments passed to it.
@@ -27,7 +27,7 @@ export function debounce<
     if (timeout) clearTimeout(timeout);
 
     // Set a new timeout to execute `func` after `wait` milliseconds.
-    setTimeout(() => {
+    timeout = setTimeout(() => {
       func(...args);
     }, wait);
   };
