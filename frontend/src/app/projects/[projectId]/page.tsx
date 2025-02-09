@@ -2,7 +2,7 @@
 
 import { CSVExportButton, ExcelExportButton } from "@/components/exportButton";
 import { ImportExcelButton } from "@/components/importExcelButton";
-import ItemTable from "@/components/ItemTable";
+import Items from "@/components/Items";
 import api from "@/lib/apiClient";
 import { Project } from "@/lib/types";
 import { formatDistanceToNowStrict } from "date-fns";
@@ -89,7 +89,7 @@ export default function Projects() {
         </div>
 
         <div className="overflow-x-auto">
-          <ItemTable
+          <Items
             project={project}
             refreshImportedItems={handleImportSuccess}
           />

@@ -5,8 +5,6 @@ import { BasicItem } from "@/lib/types";
 interface ItemTableRowProps {
   item: BasicItem;
   handleRowClick: (parentId: number, item: BasicItem) => void;
-  onMouseEnter?: React.MouseEventHandler<HTMLTableRowElement>;
-  onMouseLeave?: React.MouseEventHandler<HTMLTableRowElement>;
   projectId: string;
   onItemUpdated: () => void;
   onItemDeleted: () => void;
@@ -16,8 +14,6 @@ const ItemTableRow: React.FC<ItemTableRowProps> = memo(
   ({
     item,
     handleRowClick,
-    onMouseEnter,
-    onMouseLeave,
     projectId,
     onItemUpdated,
     onItemDeleted,
@@ -25,10 +21,11 @@ const ItemTableRow: React.FC<ItemTableRowProps> = memo(
     return (
       <tr
         key={item.id}
-        className="hover:bg-muted/10 cursor-pointer"
+        className="hover:bg-muted/10 cursor-pointer animate-reveal opacity-0 blur-sm transition-all duration-200"
         onClick={() => handleRowClick(item.id, item)}
-        onMouseEnter={onMouseEnter}
-        onMouseLeave={onMouseLeave}
+        style={{
+          animationFillMode: "forwards",
+        }}
       >
         <td className="px-2 py-4 text-sm">{item.code}</td>
         <td className="px-2 py-4 text-sm">{item.name}</td>

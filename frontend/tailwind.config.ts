@@ -9,6 +9,23 @@ export default {
   ],
   theme: {
     extend: {
+      keyframes: {
+        reveal: {
+          "0%": {
+            opacity: "0",
+            filter: "blur(10px)",
+            transform: "translateX(-20px)",
+          },
+          "100%": {
+            opacity: "1",
+            filter: "blur(0)",
+            transform: "translateX(0)",
+          },
+        },
+      },
+      animation: {
+        reveal: "reveal 0.5s ease-out forwards",
+      },
       fontFamily: {
         sans: ["var(--font-outfit)"],
         mono: ["var(--font-ibm-plex-mono)"],

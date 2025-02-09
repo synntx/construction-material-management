@@ -88,18 +88,27 @@ export const getItems = async (
     where.subType = { in: qp.subType.split(",") as SubType[] };
   }
 
-  if (avgMaxLeadTime !== undefined) {
-    where.avgLeadTime = { ...where, lte: avgMinLeadTime };
-  }
-  if (avgMinLeadTime !== undefined) {
-    where.avgLeadTime = { ...where, gte: avgMinLeadTime };
+  if (minRate !== undefined || maxRate !== undefined) {
+    where.rate = {};
+
+    if (minRate !== undefined) {
+      where.rate.gte = minRate;
+    }
+    if (maxRate !== undefined) {
+      where.rate.lte = maxRate;
+    }
   }
 
-  if (minRate !== undefined) {
-    where.rate = { ...where, lte: minRate };
-  }
-  if (maxRate !== undefined) {
-    where.rate = { ...where, gte: maxRate };
+  if (avgMinLeadTime !== undefined || avgMaxLeadTime !== undefined) {
+    where.avgLeadTime = {};
+
+    if (avgMinLeadTime !== undefined) {
+      where.avgLeadTime.gte = avgMinLeadTime;
+    }
+
+    if (avgMaxLeadTime !== undefined) {
+      where.avgLeadTime.lte = avgMaxLeadTime;
+    }
   }
 
   if (qp.q) {

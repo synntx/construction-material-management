@@ -27,8 +27,15 @@ const ItemTableHeader: React.FC<ItemTableHeaderProps> = ({
         {headers.map((field) => (
           <th
             key={field}
-            className="px-2 py-3.5 text-left text-sm font-semibold cursor-pointer"
-            onClick={() => handleSort(field)}
+            onClick={field !== "actions" ? () => handleSort(field) : undefined}
+            className={`
+              px-2 py-3.5 text-left text-sm font-semibold cursor-pointer
+              animate-reveal opacity-0 blur-xl transition-all duration-200
+              ${field !== "actions" && "hover:bg-muted/10"}
+            `}
+            style={{
+              animationFillMode: "forwards",
+            }}
           >
             {field.charAt(0).toUpperCase() + field.slice(1)}
             {sortField === field ? (sortOrder === "asc" ? " ↑" : " ↓") : ""}
