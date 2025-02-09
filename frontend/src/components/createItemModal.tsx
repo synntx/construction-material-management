@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -21,10 +21,21 @@ import {
 } from "@/components/ui/select";
 import useFetchItems from "@/hooks/useFetchItems";
 import api from "@/lib/apiClient";
-import { z } from "zod"; // Import Zod for schema
+import { z } from "zod";
 import { toast } from "sonner";
 import { isAxiosError } from "axios";
 import { BasicItem } from "@/lib/types";
+import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
+import { Check, ChevronsUpDown } from "lucide-react";
+import {
+  Command,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "./ui/command";
+import { cn } from "@/lib/utils";
+import { debounce } from "@/lib/debounce";
 
 enum SubTypeEnum {
   civil = "civil",
@@ -69,7 +80,7 @@ interface CreateItemModalProps {
   onItemCreated: () => void;
 }
 
-interface ItemsResponse {
+export interface ItemsResponse {
   items: BasicItem[];
   totalPages: number;
 }
@@ -87,20 +98,34 @@ const CreateItemModal: React.FC<CreateItemModalProps> = ({
   const [parentItemId, setParentItemId] = useState<string>("0");
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [popoverOpen, setPopoverOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
 
-  const parentItemsUrl = `/api/v1/projects/${projectId}/items`;
+  const itemsURL = `/api/v1/projects/${projectId}/items?${new URLSearchParams({
+    q: debouncedSearchTerm,
+  })}`;
+
   const {
     data: parentItemsData,
     loading: parentItemsLoading,
     error: parentItemsError,
-    fetchData: fetchParentItems,
-  } = useFetchItems<ItemsResponse>(parentItemsUrl);
+    fetchData: fetchItems,
+  } = useFetchItems<{ items: BasicItem[]; totalPages: number }>(itemsURL);
+
+  const debouncedHandleSearch = useMemo(
+    () =>
+      debounce((value: string) => {
+        console.log("🟢 debounced handleSearch called with:", value);
+        setDebouncedSearchTerm(value);
+      }, 300),
+    []
+  );
 
   useEffect(() => {
-    if (open) {
-      fetchParentItems();
-    }
-  }, [open, fetchParentItems]);
+    fetchItems();
+    console.log("Fetched Items Data:", parentItemsData);
+  }, [itemsURL, fetchItems]);
 
   const handleSubmit = useCallback(
     async (event: React.FormEvent) => {
@@ -139,12 +164,10 @@ const CreateItemModal: React.FC<CreateItemModalProps> = ({
           avgLeadTime: Number(validatedData.data.avgLeadTime),
         };
 
-        // Only add rate if it's not empty
         if (validatedData.data.rate && validatedData.data.rate !== "") {
           apiPayload.rate = Number(validatedData.data.rate);
         }
 
-        // Only add parentItemId if it's not "0" (no parent)
         if (
           validatedData.data.parentItemId &&
           validatedData.data.parentItemId !== "0"
@@ -257,34 +280,90 @@ const CreateItemModal: React.FC<CreateItemModalProps> = ({
               </SelectContent>
             </Select>
           </div>
-          <div className="grid gap-2">
-            <Label htmlFor="parentItemId">Parent Item (Optional)</Label>
-            <Select
-              value={parentItemId}
-              onValueChange={(value) => setParentItemId(value)}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select parent item (optional)" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="0">No Parent</SelectItem>
-                {parentItemsLoading ? (
-                  <SelectItem disabled value="loading">
-                    Loading parent items...
-                  </SelectItem>
-                ) : parentItemsError ? (
-                  <SelectItem disabled value="error">
-                    Error loading parent items
-                  </SelectItem>
-                ) : (
-                  parentItemsData?.items?.map((item) => (
-                    <SelectItem key={item.id} value={String(item.id)}>
-                      {`${item.code} - ${item.name}`}{" "}
-                    </SelectItem>
-                  ))
-                )}
-              </SelectContent>
-            </Select>
+
+          <div className="grid w-full items-center gap-4">
+            <Label htmlFor="parentItemId">Parent Item</Label>
+            <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={popoverOpen}
+                  className="w-full justify-between"
+                >
+                  {parentItemId
+                    ? parentItemsData?.items.find(
+                        (item) => String(item.id) === parentItemId
+                      )?.name || "Select..."
+                    : "Select Parent Item..."}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-full p-0">
+                <Command shouldFilter={false}>
+                  <CommandInput
+                    placeholder="Search parent item..."
+                    className="h-9"
+                    value={searchTerm}
+                    onValueChange={(val) => {
+                      setSearchTerm(val);
+                      debouncedHandleSearch(val);
+                    }}
+                  />
+                  <CommandList>
+                    {/* <CommandEmpty>No parent item found.</CommandEmpty> */}
+                    <CommandGroup>
+                      <CommandItem
+                        key="no-parent"
+                        value=""
+                        onSelect={() => {
+                          setParentItemId("");
+                          setPopoverOpen(false);
+                        }}
+                      >
+                        No Parent
+                        <Check
+                          className={cn(
+                            "ml-auto h-4 w-4",
+                            parentItemId === "" ? "opacity-100" : "opacity-0"
+                          )}
+                        />
+                      </CommandItem>
+                      {parentItemsLoading ? (
+                        <CommandItem value="loading" disabled>
+                          Loading...
+                        </CommandItem>
+                      ) : parentItemsError ? (
+                        <CommandItem value="error" disabled>
+                          Error loading items
+                        </CommandItem>
+                      ) : (
+                        parentItemsData?.items.map((item) => (
+                          <CommandItem
+                            key={item.id}
+                            value={String(item.id)}
+                            onSelect={(currentValue) => {
+                              setParentItemId(currentValue);
+                              setPopoverOpen(false);
+                            }}
+                          >
+                            {`${item.code} - ${item.name}`}
+                            <Check
+                              className={cn(
+                                "ml-auto h-4 w-4",
+                                parentItemId === String(item.id)
+                                  ? "opacity-100"
+                                  : "opacity-0"
+                              )}
+                            />
+                          </CommandItem>
+                        ))
+                      )}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
 
           {formError && <p className="text-red-500 text-sm">{formError}</p>}
