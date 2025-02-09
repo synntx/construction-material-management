@@ -293,17 +293,16 @@ export default function Items({ project, refreshImportedItems }: ItemsProps) {
   );
   return (
     <div className="relative pt-2">
-      <div className="mb-4 flex justify-between items-center flex-col sm:flex-row gap-2 sm:gap-0">
-        <div className="flex gap-4 sm:gap-12 items-center w-full sm:w-auto justify-between sm:justify-start">
-          <h2 className="text-lg font-semibold">Items</h2>
+      <div className="mb-4 flex justify-between gap-5 items-center flex-row ">
+        <div className="flex gap-4 sm:gap-12 items-center w-full  pl-1 justify-between sm:justify-start">
           <Input
-            placeholder="search using code or name"
-            className="max-w-full sm:max-w-lg h-8 w-full sm:w-auto"
+            placeholder="Search by name or item code..."
+            className="max-w-sm"
             value={searchTerm}
             onChange={handleChange}
           />
         </div>
-        <div className="flex justify-end w-full sm:w-auto">
+        <div className="flex justify-end sm:w-auto">
           <CreateItemModal
             projectId={project.id}
             onItemCreated={refreshItems}
