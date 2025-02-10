@@ -13,13 +13,25 @@ import catchErrors from "../utils/catchErrors";
 import { createReadStream, unlinkSync } from "fs";
 import { createObjectCsvWriter } from "csv-writer";
 import logger from "../utils/logger";
-import { NO_CONTENT } from "../constants/http";
+import { Queue } from "bullmq";
+import { BasicItem } from "@prisma/client";
+
+interface PdfGenerationRequest {
+  data: BasicItem[];
+}
+
+interface PdfJobResult {
+  filePath: string;
+}
+
+const connection = { host: "localhost", port: 6379 };
+const pdfQueue = new Queue<PdfGenerationRequest>("pdf-generation", {
+  connection,
+});
 
 export const importItemsFromExcel = catchErrors(
   async (req: ExpressRequest, res: ExpressResponse, next: NextFunction) => {
-    logger.info("Handling importItemsFromExcel request");
     const projectId = req.params.projectId;
-    logger.debug(`Importing items for projectId: ${projectId}`);
 
     if (!req.file) {
       logger.warn("No file uploaded for item import");
@@ -33,7 +45,8 @@ export const importItemsFromExcel = catchErrors(
       `Excel file processed, sheet name: ${sheetName}, row count: ${sheet.length}`
     );
 
-    const validItems: {
+    // First pass: validate and collect all rows without parent-child checks.
+    const validItems: Array<{
       projectId: string;
       subType: any;
       code: string;
@@ -41,51 +54,155 @@ export const importItemsFromExcel = catchErrors(
       unit: string;
       rate: number;
       avgLeadTime: number;
-    }[] = [];
-    const errors = [];
-
-    for (const row of sheet) {
+      rowNumber: number;
+    }> = [];
+    const errors: any[] = [];
+    for (const [index, row] of sheet.entries()) {
       const parsed = excelItemSchema.safeParse(row as any);
       if (!parsed.success) {
-        errors.push({ row, error: parsed.error.errors });
-        logger.warn("Validation error in Excel row:", {
+        errors.push({
           row,
-          errors: parsed.error.errors,
+          line: index + 1,
+          error: parsed.error.errors,
         });
-      } else {
-        const validatedData: ExcelItemSchemaType = parsed.data;
-        validItems.push({
-          projectId,
-          subType: validatedData.SubType,
-          code: validatedData.Code,
-          name: validatedData["Item Name"],
-          unit: validatedData.Unit,
-          rate: validatedData.Rate,
-          avgLeadTime: validatedData["Avg. Lead Time"] ?? 0,
-        });
+        logger.warn(
+          `Validation error in Excel row ${index + 1}:`,
+          parsed.error.errors
+        );
+        continue;
       }
+
+      const validatedData: ExcelItemSchemaType = parsed.data;
+      validItems.push({
+        projectId,
+        subType: validatedData.Type,
+        code: validatedData.Code,
+        name: validatedData["Item Name"],
+        unit: validatedData.Unit,
+        rate: validatedData.Rate,
+        avgLeadTime: validatedData["Avg. Lead Time"] ?? 0,
+        rowNumber: index + 1,
+      });
     }
 
-    if (validItems.length > 0) {
-      logger.debug(
-        `Valid items found, count: ${validItems.length}, proceeding with database transaction`
-      );
-      await prisma.$transaction(async (tx) => {
-        await tx.basicItem.createMany({
-          data: validItems,
-          skipDuplicates: true,
-        });
-      });
-      logger.info(
-        `Successfully imported ${validItems.length} items from Excel for projectId: ${projectId}`
-      );
-    } else {
+    // second pass: check that every child item’s parent exists somewhere in the sheet.
+    // (A child item is one whose code contains a hyphen.)
+    const itemsToInsert = validItems.filter((item) => {
+      if (item.code.includes("-")) {
+        const parentCode = item.code.split("-")[0];
+        const parentFound = validItems.some((i) => i.code === parentCode);
+        if (!parentFound) {
+          errors.push({
+            row: item.rowNumber,
+            error: `Child item with code "${item.code}" has no matching parent "${parentCode}" in the Excel sheet.`,
+          });
+          logger.warn(
+            `Child item with code "${item.code}" (row ${item.rowNumber}) has no matching parent "${parentCode}" in the Excel sheet.`
+          );
+          return false;
+        }
+      }
+      return true;
+    });
+
+    if (itemsToInsert.length === 0) {
       logger.info("No valid items found in Excel file to import.");
+      return res.status(400).json({
+        message: "Import completed",
+        successCount: 0,
+        errors,
+      });
+    }
+
+    // separate parent items and child items.
+    // by convention, parent items do `NOT` have a hyphen in their code.
+    const parentItems = itemsToInsert.filter(
+      (item) => !item.code.includes("-")
+    );
+    const childItems = itemsToInsert.filter((item) => item.code.includes("-"));
+
+    try {
+      await prisma.$transaction(async (tx) => {
+        // ----- BULK INSERT PARENT ITEMS -----
+        if (parentItems.length > 0) {
+          const parentData = parentItems.map((item) => ({
+            projectId: item.projectId,
+            subType: item.subType,
+            code: item.code,
+            name: item.name,
+            unit: item.unit,
+            rate: item.rate,
+            avgLeadTime: item.avgLeadTime,
+          }));
+          await tx.basicItem.createMany({ data: parentData });
+        }
+
+        // ----- GET PARENT IDS FOR CHILD ITEMS -----
+        // get parent codes referenced by child items. (Set for uniqueueness)
+        const parentCodes = Array.from(
+          new Set(childItems.map((item) => item.code.split("-")[0]))
+        );
+
+        // query the db for these parent's. This covers both newly inserted and pre-existing ones.
+        const parentRecords = await tx.basicItem.findMany({
+          where: {
+            projectId: projectId,
+            code: { in: parentCodes },
+          },
+          select: { id: true, code: true },
+        });
+        const parentMap = new Map<string, number>();
+        for (const record of parentRecords) {
+          parentMap.set(record.code, record.id);
+        }
+
+        // child items with their parentItemId.
+        const childData = childItems.map((item) => {
+          const parentCode = item.code.split("-")[0];
+          const parentId = parentMap.get(parentCode);
+          if (!parentId) {
+            // this should not happen because of our checks we used previously,
+            throw new Error(
+              `Parent item with code "${parentCode}" not found in the database for child item "${item.code}".`
+            );
+          }
+          return {
+            projectId: item.projectId,
+            subType: item.subType,
+            code: item.code,
+            name: item.name,
+            unit: item.unit,
+            rate: item.rate,
+            avgLeadTime: item.avgLeadTime,
+            parentItemId: parentId,
+          };
+        });
+
+        // ----- BULK INSERT CHILD ITEMS -----
+        if (childData.length > 0) {
+          await tx.basicItem.createMany({
+            data: childData,
+            skipDuplicates: true,
+          });
+        }
+      });
+
+      logger.info(
+        `Successfully imported ${itemsToInsert.length} items from Excel for projectId: ${projectId}`
+      );
+    } catch (error) {
+      logger.error("Error during database transaction:", error);
+      errors.push({ error: "Database transaction failed." });
+      return res.status(500).json({
+        message: "Import completed with errors",
+        successCount: 0,
+        errors,
+      });
     }
 
     res.status(200).json({
       message: "Import completed",
-      successCount: validItems.length,
+      successCount: itemsToInsert.length,
       errors,
     });
   }
@@ -107,7 +224,7 @@ export const exportToExcel = catchErrors(async (req, res) => {
   const workbook = XLSX.utils.book_new();
   const worksheet = XLSX.utils.json_to_sheet(
     items.map((item) => ({
-      SubType: item.subType,
+      Type: item.subType,
       Code: item.code,
       "Item Name": item.name,
       Unit: item.unit,
@@ -179,13 +296,17 @@ export const exportToCsv = catchErrors(async (req, res) => {
   });
 });
 
-export const exportToPDF = catchErrors(async (req, res) => {
-  logger.info("Handling exportToPDF request");
-  const { projectId } = req.params;
-  logger.debug(`Exporting items to PDF for projectId: ${projectId}`);
-  logger.warn("Export to PDF feature is not yet implemented");
+// --- PDF GENERATION ---
+export const exportToPDF = catchErrors(
+  async (req: ExpressRequest, res: ExpressResponse, next: NextFunction) => {
+    logger.info("Handling exportToPDF request");
+    const { projectId } = req.params;
+    logger.debug(`Exporting items to PDF for projectId: ${projectId}`);
 
-  res
-    .status(501)
-    .json({ message: "Export to PDF feature is not implemented yet!" });
-});
+    const payload = req.body as PdfGenerationRequest;
+    console.log("Payload in main: ", payload);
+    const job = await pdfQueue.add("pdf-generation", payload);
+
+    res.status(202).json({ jobId: job.id });
+  }
+);

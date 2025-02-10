@@ -135,7 +135,7 @@ export function isValidCode(subType: SubType, code: string): boolean {
     const childCodePart = parts[1];
 
     if (!isValidParentCode(subType, parentCodePart)) {
-      return false; // parent cod part invalid
+      return false; // parent code part invalid
     }
 
     const childNumber = parseInt(childCodePart, 10);

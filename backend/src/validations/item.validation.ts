@@ -11,8 +11,7 @@ export const createItemSchema = z.object({
     unit: z.string().min(1, { message: "unit name is required" }),
     rate: z
       .number({ invalid_type_error: "Rate must be a number" })
-      .min(1, { message: "rate must be at least 1" })
-      .optional(),
+      .min(1, { message: "rate must be at least 1" }),
     avgLeadTime: z
       .number({ invalid_type_error: "Average lead time must be a number" })
       .positive({ message: "Average lead time must be a positive number" }),

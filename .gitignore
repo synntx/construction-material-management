@@ -30,3 +30,8 @@ frontend/.cache
 frontend/npm-debug.log
 frontend/yarn-debug.log
 frontend/pnpm-debug.log
+
+# PDF - service
+pdf-service/node_modules
+pdf-service/.env
+pdf-service/dist

@@ -24,7 +24,7 @@ import api from "@/lib/apiClient";
 import { z } from "zod";
 import { toast } from "sonner";
 import { isAxiosError } from "axios";
-import { BasicItem } from "@/lib/types";
+import { BasicItem, SubTypeEnum } from "@/lib/types";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Check, ChevronsUpDown } from "lucide-react";
 import {
@@ -37,17 +37,6 @@ import {
 import { cn } from "@/lib/utils";
 import { debounce } from "@/lib/debounce";
 
-enum SubTypeEnum {
-  civil = "civil",
-  ohe = "ohe",
-  pway = "pway",
-  structural_steel = "structural_steel",
-  reinforcement_steel = "reinforcement_steel",
-  roofing_sheets = "roofing_sheets",
-  flush_doors = "flush_doors",
-  mechanical = "mechanical",
-}
-
 const createItemSchemaFrontend = z.object({
   projectId: z.string().uuid({ message: "Please provide a valid projectId" }),
   name: z
@@ -55,12 +44,9 @@ const createItemSchemaFrontend = z.object({
     .min(1, { message: "Item name is required" })
     .max(100, { message: "Item name must not exceed 100 characters" }),
   unit: z.string().min(1, { message: "Unit is required" }),
-  rate: z
-    .string()
-    .optional()
-    .refine((value) => value === "" || !isNaN(Number(value)), {
-      message: "Rate must be a number if provided",
-    }),
+  rate: z.string().refine((value) => value === "" || !isNaN(Number(value)), {
+    message: "Rate must be a number if provided",
+  }),
   avgLeadTime: z
     .string()
     .refine((value) => !isNaN(Number(value)), {

@@ -3,8 +3,8 @@ import { z } from "zod";
 import { isValidCode } from "../utils/code";
 
 export const excelItemSchema = z.object({
-  SubType: z
-    .string()
+  Type: z
+    .nativeEnum(SubType)
     .optional()
     .transform((val) => val?.toLowerCase().trim()),
   Code: z
