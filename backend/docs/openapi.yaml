@@ -146,11 +146,11 @@ components:
       type: object
       properties:
         success:
-          type: bool
+          type: boolean
           example: false
         statusCode:
           type: integer
           example: 500
-          message:
-            type: string
-            exmple: "Internal server error"
+        message:
+          type: string
+          example: "Internal server errror"
