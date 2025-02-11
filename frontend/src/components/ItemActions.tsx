@@ -27,7 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { BasicItem } from "@/lib/types";
+import { BasicItem, SubTypeEnum } from "@/lib/types";
 
 interface ItemActionsProps {
   item: BasicItem;
@@ -35,17 +35,6 @@ interface ItemActionsProps {
   onItemUpdated: () => void;
   onItemDeleted: () => void;
 }
-
-export const SubTypeEnum = {
-  civil: "civil",
-  ohe: "ohe",
-  pway: "pway",
-  structural_steel: "structural_steel",
-  reinforcement_steel: "reinforcement_steel",
-  roofing_sheets: "roofing_sheets",
-  flush_doors: "flush_doors",
-  mechanical: "mechanical",
-} as const;
 
 export function ItemActions({
   item,
