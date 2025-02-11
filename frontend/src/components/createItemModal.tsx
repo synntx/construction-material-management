@@ -24,7 +24,7 @@ import api from "@/lib/apiClient";
 import { z } from "zod";
 import { toast } from "sonner";
 import { isAxiosError } from "axios";
-import { BasicItem, SubTypeEnum } from "@/lib/types";
+import { BasicItem, SubType } from "@/lib/types";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Check, ChevronsUpDown } from "lucide-react";
 import {
@@ -55,7 +55,7 @@ const createItemSchemaFrontend = z.object({
     .refine((value) => Number(value) > 0, {
       message: "Average lead time must be a positive number",
     }),
-  subType: z.nativeEnum(SubTypeEnum, {
+  subType: z.nativeEnum(SubType, {
     message: "Please select a valid subtype",
   }),
   parentItemId: z.string().optional(),
@@ -80,7 +80,7 @@ const CreateItemModal: React.FC<CreateItemModalProps> = ({
   const [unit, setUnit] = useState<string>("");
   const [rate, setRate] = useState<string>("");
   const [avgLeadTime, setAvgLeadTime] = useState<string>("1");
-  const [subType, setSubType] = useState<SubTypeEnum>(SubTypeEnum.civil);
+  const [subType, setSubType] = useState<SubType>(SubType.civil);
   const [parentItemId, setParentItemId] = useState<string>("0");
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -194,7 +194,7 @@ const CreateItemModal: React.FC<CreateItemModalProps> = ({
     setUnit("");
     setRate("");
     setAvgLeadTime("1");
-    setSubType(SubTypeEnum.civil);
+    setSubType(SubType.civil);
     setParentItemId("");
     setFormError(null);
   };
@@ -253,12 +253,12 @@ const CreateItemModal: React.FC<CreateItemModalProps> = ({
           </div>
           <div className="grid gap-2">
             <Label htmlFor="subType">Subtype</Label>
-            <Select onValueChange={(value) => setSubType(value as SubTypeEnum)}>
+            <Select onValueChange={(value) => setSubType(value as SubType)}>
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select subtype" />
               </SelectTrigger>
               <SelectContent>
-                {Object.values(SubTypeEnum).map((type) => (
+                {Object.values(SubType).map((type) => (
                   <SelectItem key={type} value={type}>
                     {type}
                   </SelectItem>

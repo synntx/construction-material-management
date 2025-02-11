@@ -25,8 +25,7 @@ itemsIoRouter.get(
   exportToExcel
 );
 
-// TODO: Export basic items to an pdf file (not implemented yet)
-itemsIoRouter.post("/projects/:projectId/items/export/pdf", exportToPDF);
+itemsIoRouter.get("/projects/:projectId/items/export/pdf", exportToPDF);
 
 // Export basic items to an csv file
 itemsIoRouter.get(

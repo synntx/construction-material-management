@@ -21,7 +21,7 @@ export interface BasicItem {
   childItems: BasicItem[] | [];
 }
 
-export enum SubTypeEnum {
+export enum SubType {
   civil = "civil",
   ohe = "ohe",
   pway = "pway",

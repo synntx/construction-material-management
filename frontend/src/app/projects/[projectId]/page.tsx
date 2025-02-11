@@ -3,6 +3,7 @@
 import { CSVExportButton, ExcelExportButton } from "@/components/exportButton";
 import { ImportExcelButton } from "@/components/importExcelButton";
 import Items from "@/components/Items";
+import PDFExportButton from "@/components/PDFExportButton";
 import api from "@/lib/apiClient";
 import { Project } from "@/lib/types";
 import { formatDistanceToNowStrict } from "date-fns";
@@ -41,8 +42,7 @@ export default function Projects() {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-full py-4">
-        <div className="text-center">
-          Loading projects...</div>
+        <div className="text-center">Loading projects...</div>
       </div>
     );
   }
@@ -58,9 +58,7 @@ export default function Projects() {
   if (!project) {
     return (
       <div className="flex justify-center items-center h-full py-4">
-        <div className="text-center text-gray-600">
-          Project not found.
-        </div>
+        <div className="text-center text-gray-600">Project not found.</div>
       </div>
     );
   }
@@ -85,14 +83,12 @@ export default function Projects() {
             />
             <ExcelExportButton projectId={project.id} />
             <CSVExportButton projectId={project.id} />
+            <PDFExportButton projectId={project.id} />
           </div>
         </div>
 
         <div className="overflow-x-auto">
-          <Items
-            project={project}
-            refreshImportedItems={handleImportSuccess}
-          />
+          <Items project={project} refreshImportedItems={handleImportSuccess} />
         </div>
       </div>
     </div>

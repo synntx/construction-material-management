@@ -13,21 +13,34 @@ import catchErrors from "../utils/catchErrors";
 import { createReadStream, unlinkSync } from "fs";
 import { createObjectCsvWriter } from "csv-writer";
 import logger from "../utils/logger";
-import { Queue } from "bullmq";
+import { Queue, QueueEvents } from "bullmq";
 import { BasicItem } from "@prisma/client";
+import path from "path";
+import appAssert from "../utils/assert";
+import { NOT_FOUND } from "../constants/http";
 
-interface PdfGenerationRequest {
-  data: BasicItem[];
+interface Project {
+  id: string;
+  name: string;
+  createdAt: Date | null;
+  updatedAt: Date | null;
+  userId: string;
+  basicItems: BasicItem[];
 }
 
 interface PdfJobResult {
   filePath: string;
 }
 
+const PDF_SERVICE_URL = process.env.PDF_SERVICE_URL || "http://localhost:3002";
+
 const connection = { host: "localhost", port: 6379 };
-const pdfQueue = new Queue<PdfGenerationRequest>("pdf-generation", {
+const pdfQueue = new Queue<Project>("pdf-generation", {
   connection,
 });
+const queueEvents = new QueueEvents("pdf-generation");
+
+//-------- EXCEL IMPORT ----------
 
 export const importItemsFromExcel = catchErrors(
   async (req: ExpressRequest, res: ExpressResponse, next: NextFunction) => {
@@ -208,6 +221,8 @@ export const importItemsFromExcel = catchErrors(
   }
 );
 
+// -------- EXCEL EXPORT -----------
+
 export const exportToExcel = catchErrors(async (req, res) => {
   logger.info("Handling exportToExcel request");
   const { projectId } = req.params;
@@ -254,6 +269,8 @@ export const exportToExcel = catchErrors(async (req, res) => {
   res.send(excelBuffer);
 });
 
+// ------- CSV Generation ---------
+
 export const exportToCsv = catchErrors(async (req, res) => {
   logger.info("Handling exportToCsv request");
   const { projectId } = req.params;
@@ -296,17 +313,57 @@ export const exportToCsv = catchErrors(async (req, res) => {
   });
 });
 
-// --- PDF GENERATION ---
+//**  --------- PDF GENERATION ----------
+
 export const exportToPDF = catchErrors(
   async (req: ExpressRequest, res: ExpressResponse, next: NextFunction) => {
     logger.info("Handling exportToPDF request");
     const { projectId } = req.params;
     logger.debug(`Exporting items to PDF for projectId: ${projectId}`);
 
-    const payload = req.body as PdfGenerationRequest;
-    console.log("Payload in main: ", payload);
+    const payload = await prisma.project.findFirst({
+      where: {
+        id: projectId,
+      },
+      include: {
+        basicItems: {
+          include: {
+            childItems: {
+              orderBy: { code: "asc" },
+            },
+          },
+          orderBy: { code: "asc" },
+        },
+      },
+    });
+
+    appAssert(payload, NOT_FOUND, "Project not found");
+
     const job = await pdfQueue.add("pdf-generation", payload);
 
-    res.status(202).json({ jobId: job.id });
+    /**
+     * Approaches (for better ux, and real-time updates):
+     ** 1. WebSocket:
+     *    - Client subscribes: ws.subscribe(`pdf-${jobId}`)
+     *    - Worker emits completion: ws.emit(`pdf-${jobId}`, {url, status})
+     ** 2. Server-Sent Events (SSE):
+     *    - One-way server -> client updates
+     ** 3. Cloud Storage:
+     *    - Worker uploads to S3/Azure Blob
+     *    - Store job status and after completion save uploaded file url to db
+     */
+
+    const result = await job.waitUntilFinished(queueEvents, 60000);
+
+    if (result && result.filePath) {
+      const filename = path.basename(result.filePath);
+      res.json({
+        jobId: job.id,
+        filename,
+        downloadUrl: `${PDF_SERVICE_URL}/api/download/${filename}`,
+      });
+    } else {
+      res.status(500).json({ message: "PDF generation failed" });
+    }
   }
 );

@@ -27,7 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { BasicItem, SubTypeEnum } from "@/lib/types";
+import { BasicItem, SubType } from "@/lib/types";
 
 interface ItemActionsProps {
   item: BasicItem;
@@ -193,7 +193,7 @@ export function ItemActions({
                   <SelectValue placeholder="Select subtype" />
                 </SelectTrigger>
                 <SelectContent>
-                  {Object.values(SubTypeEnum).map((type) => (
+                  {Object.values(SubType).map((type) => (
                     <SelectItem key={type} value={type}>
                       {type}
                     </SelectItem>
