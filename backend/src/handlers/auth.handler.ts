@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import catchErrors from "../utils/catchErrors";
 import { signup, signin } from "../services/auth.service";
-import { OK } from "../constants/http";
+import { CREATED, OK } from "../constants/http";
 import logger from "../utils/logger";
 
 export const signupHandler = catchErrors(
@@ -21,7 +21,7 @@ export const signupHandler = catchErrors(
       sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     });
 
-    return res.status(OK).json(user);
+    return res.status(CREATED).json(user);
   }
 );
 
