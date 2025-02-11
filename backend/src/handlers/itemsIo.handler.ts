@@ -28,17 +28,17 @@ interface Project {
   basicItems: BasicItem[];
 }
 
-interface PdfJobResult {
-  filePath: string;
-}
-
 const PDF_SERVICE_URL = process.env.PDF_SERVICE_URL || "http://localhost:3002";
 
-const connection = { host: "localhost", port: 6379 };
-const pdfQueue = new Queue<Project>("pdf-generation", {
-  connection,
-});
-const queueEvents = new QueueEvents("pdf-generation");
+const connection = {
+  host: process.env.UPSTASH_HOST,
+  port: process.env.UPSTASH_PORT ? Number(process.env.UPSTASH_PORT) : 6379,
+  password: process.env.UPSTASH_TOKEN,
+  tls: {},
+};
+
+const pdfQueue = new Queue<Project>("pdf-generation", { connection });
+const queueEvents = new QueueEvents("pdf-generation", { connection });
 
 //-------- EXCEL IMPORT ----------
 
