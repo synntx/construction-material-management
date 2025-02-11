@@ -9,6 +9,7 @@ import express, {
   NextFunction,
 } from "express";
 import cors from "cors";
+import "dotenv/config";
 
 // ---------- Type Definitions ----------
 
@@ -49,9 +50,13 @@ app.use(cors());
 app.use(express.json());
 app.use("/api", downloadRouter);
 const PORT = process.env.PDF_SERVICE_PORT || 3002;
-const MAIN_BACKEND_URL =
-  process.env.MAIN_BACKEND_URL || "http://localhost:3000";
-const connection = { host: "localhost", port: 6379 };
+
+const connection = {
+  host: process.env.UPSTASH_HOST,
+  port: process.env.UPSTASH_PORT ? Number(process.env.UPSTASH_PORT) : 6379,
+  password: process.env.UPSTASH_TOKEN,
+  tls: {},
+};
 
 new JobScheduler("pdf-generation", { connection });
 
