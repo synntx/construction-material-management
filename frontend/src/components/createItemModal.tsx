@@ -165,6 +165,7 @@ const CreateItemModal: React.FC<CreateItemModalProps> = ({
         toast.success("Item created successfully!");
         onItemCreated();
         setOpen(false);
+        setIsSubmitting(false);
         resetForm();
       } catch (error) {
         setIsSubmitting(false);
