@@ -35,11 +35,6 @@ export const SearchInput = () => {
     }
   }, [searchParams]);
 
-  useEffect(() => {
-    return () => {
-      debouncedUpdate.cancel();
-    };
-  }, [debouncedUpdate]);
 
   return (
     <div className="relative w-full max-w-md">

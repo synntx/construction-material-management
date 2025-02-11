@@ -6,6 +6,7 @@ import Building from "@/icons/building";
 import { formatDistanceToNowStrict } from "date-fns";
 import api from "@/lib/apiClient";
 import { Project } from "@/lib/types";
+import { toast } from "sonner";
 
 export function ProjectsSearchResults({ query }: { query: string }) {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -23,6 +24,7 @@ export function ProjectsSearchResults({ query }: { query: string }) {
         setProjects(response.data.projects);
         setTotalPages(response.data.totalPages);
       } catch (error) {
+        toast.error("Error searching projects")
         console.error("Error fetching projects:", error);
       } finally {
         setLoading(false);
@@ -62,7 +64,6 @@ export function ProjectsSearchResults({ query }: { query: string }) {
         ))}
       </div>
 
-      {/* Pagination */}
       <div className="flex justify-center mt-4 gap-2">
         <button
           onClick={() => setPage((p) => Math.max(1, p - 1))}
