@@ -147,7 +147,7 @@ export const importItemsFromExcel = catchErrors(
             rate: item.rate,
             avgLeadTime: item.avgLeadTime,
           }));
-          await tx.basicItem.createMany({ data: parentData });
+          await tx.basicItem.createMany({ data: parentData, skipDuplicates:true});
         }
 
         // ----- GET PARENT IDS FOR CHILD ITEMS -----
